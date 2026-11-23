@@ -202,6 +202,16 @@ The OSL open source distribution consists of the following components:
   closures should be evaluated and integrated (including with multiple
   importance sampling).
 
+  The testrender core is also available as the reusable `libtestrender`
+  library.  It is built whenever the `testrender` executable is, but pass
+  `-DOSL_BUILD_TESTRENDER_LIB=ON` to install it, along with the
+  `OSL::libtestrender` CMake target and the `OSL/testrender.h` session API.
+  The API supports incremental, per-sample rendering, so embedding
+  applications can display a progressively refined preview without
+  re-rendering the whole image.  `libtestrender` is independent of the
+  `testrender` executable and does not require the XML scene parser or the
+  OptiX path.
+
 * A few sample shaders.
 
 * Documentation -- at this point consisting of the OSL language

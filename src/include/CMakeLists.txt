@@ -5,6 +5,12 @@
 file (GLOB public_headers OSL/*.h)
 file (GLOB public_headers_imathx OSL/Imathx/*.h)
 
+# Only install the testrender session API together with the library that
+# implements it.
+if (NOT OSL_BUILD_TESTRENDER_LIB)
+    list (FILTER public_headers EXCLUDE REGEX "/OSL/testrender\\.h$")
+endif ()
+
 
 option (USE_GENERATED_EXPORT_HEADER "Use CMake-generated export header" OFF)
 if (USE_GENERATED_EXPORT_HEADER)

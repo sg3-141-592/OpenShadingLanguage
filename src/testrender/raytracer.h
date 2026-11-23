@@ -206,6 +206,19 @@ struct Scene {
     int num_prims() const { return triangles.size(); }
 
     void prepare(OIIO::ErrorHandler& errhandler);
+
+    void clear()
+    {
+        verts.clear();
+        normals.clear();
+        uvs.clear();
+        triangles.clear();
+        uv_triangles.clear();
+        n_triangles.clear();
+        shaderids.clear();
+        last_index.clear();
+        bvh.reset();
+    }
 #endif
 
     // NB: OptiX needs to populate the ShaderGlobals in the closest-hit program,

@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <OpenImageIO/imagebuf.h>
 
@@ -31,7 +35,7 @@ public:
     // Just use 4x4 matrix for transformations
     typedef Matrix44 Transformation;
 
-    SimpleRaytracer();
+    SimpleRaytracer(bool abort_on_error = true);
     virtual ~SimpleRaytracer() {}
 
     // RendererServices support:
@@ -84,13 +88,33 @@ public:
                                ustringhash projection, float hfov, float hither,
                                float yon, int xres, int yres);
 
-    virtual void parse_scene_xml(const std::string& scenefile);
+    void parse_scene_xml(const std::string& scenefile);
     virtual void prepare_render();
     void prepare_lights();
     void prepare_geometry();
     virtual void warmup() {}
     virtual void render(int xres, int yres);
+
+    // Render a range of samples per pixel, accumulating into pixelbuf.  This
+    // is the incremental entry point used by interactive previews: call it
+    // repeatedly with consecutive sample ranges after reset_accumulation().
+    virtual void render_samples(int xres, int yres, int sample_begin,
+                                int sample_count);
+    void reset_accumulation();
+    void cancel_render() { m_cancel_requested = true; }
+    void reset_cancel() { m_cancel_requested = false; }
     virtual void clear();
+
+    // Add a shader group and return its index.  Used by embedders that build
+    // shader groups directly instead of going through parse_scene_xml().
+    int add_shader_group(ShaderGroupRef group, bool is_light = false);
+    void set_background_shader(int shader_id, int resolution);
+    void set_show_albedo_scale(float scale) { show_albedo_scale = scale; }
+    void set_show_globals(int mode) { show_globals = mode; }
+
+    bool had_error() const { return m_had_error; }
+    std::string last_error() const;
+    void clear_error();
 
     // After render, get the pixels into pixelbuf, if they aren't already.
     virtual void finalize_pixel_buffer() {}
@@ -138,7 +162,16 @@ private:
 
     class ErrorHandler;  // subclass ErrorHandler for SimpleRaytracer
     std::unique_ptr<OIIO::ErrorHandler> m_errhandler;
-    bool m_had_error = false;
+    std::atomic<bool> m_had_error { false };
+    bool m_abort_on_error = true;
+    mutable std::mutex m_error_mutex;
+    std::string m_last_error;
+
+    // Progressive rendering state.
+    std::vector<int> m_sample_counts;
+    std::atomic<bool> m_cancel_requested { false };
+
+    void set_error(const std::string& message);
 
     // Named transforms
     typedef std::map<ustringhash, std::shared_ptr<Transformation>> TransformMap;
@@ -196,7 +229,7 @@ private:
                          int bounce = -1);
     Color3 subpixel_radiance(float x, float y, Sampler& sampler,
                              ShadingContext* ctx);
-    Color3 antialias_pixel(int x, int y, ShadingContext* ctx);
+    Color3 sample_pixel(int x, int y, int sample_index, ShadingContext* ctx);
 
     friend class ErrorHandler;
 };

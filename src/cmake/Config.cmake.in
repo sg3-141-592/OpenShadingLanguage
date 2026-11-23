@@ -10,6 +10,18 @@ include(CMakeFindDependencyMacro)
 find_dependency(Imath @Imath_VERSION@)
 find_dependency(OpenImageIO @OpenImageIO_VERSION@ REQUIRED)
 
+# A static liboslexec exports its private pugixml dependency.  Shared
+# liboslexec has no such link interface requirement, so don't force pugixml
+# on consumers of a normal shared-library build.
+if (NOT @BUILD_SHARED_LIBS@)
+    find_dependency(pugixml)
+endif ()
+
+# libtestrender's static link interface references Threads::Threads.
+if (@OSL_BUILD_TESTRENDER_LIB@)
+    find_dependency(Threads)
+endif ()
+
 # Compute the installation prefix relative to this file
 get_filename_component(_IMPORT_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
 
