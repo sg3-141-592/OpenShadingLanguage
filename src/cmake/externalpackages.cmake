@@ -23,7 +23,7 @@ message (STATUS "${ColorReset}")
 
 # Place where locally built (by src/build-scripts/*) dependencies go.
 # Put it first in the prefix path.
-set (OSL_LOCAL_DEPS_DIR "${CMAKE_SOURCE_DIR}/ext/dist" CACHE STRING
+set (OSL_LOCAL_DEPS_DIR "${PROJECT_SOURCE_DIR}/ext/dist" CACHE STRING
      "Local area for dependencies added to CMAKE_PREFIX_PATH")
 list (INSERT CMAKE_PREFIX_PATH 0 ${OSL_LOCAL_DEPS_DIR})
 message (STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}")

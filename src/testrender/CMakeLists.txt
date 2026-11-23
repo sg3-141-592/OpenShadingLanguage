@@ -26,7 +26,10 @@ set_target_properties (libtestrender
                        POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories (libtestrender
-                            BEFORE PRIVATE
+                            BEFORE PUBLIC
+                                ${OSL_BUILD_INCLUDE_DIRS}
+                                ${OSL_INSTALL_INCLUDE_DIR}
+                            PRIVATE
                                 ${OpenImageIO_INCLUDES}
                                 ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -110,7 +113,7 @@ if (OSL_BUILD_TESTS AND BUILD_TESTING)
         # Install the PTX files in a fixed location so that they can be
         # loaded at run time
         install (FILES ${ptx_list}
-                 DESTINATION ${OSL_PTX_INSTALL_DIR})
+                 DESTINATION ${OSL_PTX_INSTALL_RELDIR})
     endif()
 
     if (CMAKE_COMPILER_IS_INTELCLANG)

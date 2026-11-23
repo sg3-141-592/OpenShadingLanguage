@@ -6,15 +6,15 @@ include (CTest)
 
 # Make a build/platform/testsuite directory, and copy the master runtest.py
 # there. The rest is up to the tests themselves.
-file (MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/testsuite")
+file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/testsuite")
 file (COPY "${CMAKE_CURRENT_SOURCE_DIR}/testsuite/common"
       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/testsuite")
-add_custom_command (OUTPUT "${CMAKE_BINARY_DIR}/testsuite/runtest.py"
+add_custom_command (OUTPUT "${PROJECT_BINARY_DIR}/testsuite/runtest.py"
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        "${CMAKE_SOURCE_DIR}/testsuite/runtest.py"
-                        "${CMAKE_BINARY_DIR}/testsuite/runtest.py"
-                    MAIN_DEPENDENCY "${CMAKE_SOURCE_DIR}/testsuite/runtest.py")
-add_custom_target ( CopyFiles ALL DEPENDS "${CMAKE_BINARY_DIR}/testsuite/runtest.py" )
+                        "${PROJECT_SOURCE_DIR}/testsuite/runtest.py"
+                        "${PROJECT_BINARY_DIR}/testsuite/runtest.py"
+                    MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/testsuite/runtest.py")
+add_custom_target ( CopyFiles ALL DEPENDS "${PROJECT_BINARY_DIR}/testsuite/runtest.py" )
 
 
 set (OSL_TEST_BIG_TIMEOUT 800 CACHE STRING "Timeout for tests that take a long time")
@@ -24,8 +24,8 @@ set (OSL_TEST_BIG_TIMEOUT 800 CACHE STRING "Timeout for tests that take a long t
 #
 # Usage:
 #   add_one_testsuite ( testname
-#                  testsrcdir - Current test directory in ${CMAKE_SOURCE_DIR}
-#                  testdir    - Current test sandbox in ${CMAKE_BINARY_DIR}
+#                  testsrcdir - Current test directory in ${PROJECT_SOURCE_DIR}
+#                  testdir    - Current test sandbox in ${PROJECT_BINARY_DIR}
 #                  [ENV env1=val1 env2=val2 ... ]  - env vars to set
 #                  [COMMAND cmd...] - optional override of launch command
 #                 )
@@ -33,14 +33,14 @@ set (OSL_TEST_BIG_TIMEOUT 800 CACHE STRING "Timeout for tests that take a long t
 
 macro (add_one_testsuite testname testsrcdir)
     cmake_parse_arguments (_tst "" "" "ENV;COMMAND" ${ARGN})
-    set (testsuite "${CMAKE_SOURCE_DIR}/testsuite")
-    set (testdir "${CMAKE_BINARY_DIR}/testsuite/${testname}")
+    set (testsuite "${PROJECT_SOURCE_DIR}/testsuite")
+    set (testdir "${PROJECT_BINARY_DIR}/testsuite/${testname}")
     file (MAKE_DIRECTORY "${testdir}")
     if (NOT _tst_COMMAND)
         set (_tst_COMMAND ${Python3_EXECUTABLE} "${testsuite}/runtest.py" ${testdir})
         if (MSVC_IDE)
             list (APPEND _tst_COMMAND --devenv-config $<CONFIGURATION>
-                                      --solution-path "${CMAKE_BINARY_DIR}" )
+                                      --solution-path "${PROJECT_BINARY_DIR}" )
         endif ()
     endif ()
     get_target_property(_oiio_inc OpenImageIO::OpenImageIO INTERFACE_INCLUDE_DIRECTORIES)
@@ -48,8 +48,8 @@ macro (add_one_testsuite testname testsrcdir)
               OpenImageIO_ROOT=${OpenImageIO_ROOT}
               OIIO_INCLUDE_DIR=${_oiio_inc}
               IMATH_INCLUDE_DIR=${IMATH_INCLUDES}
-              OSL_SOURCE_DIR=${CMAKE_SOURCE_DIR}
-              OSL_BUILD_DIR=${CMAKE_BINARY_DIR}
+              OSL_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+              OSL_BUILD_DIR=${PROJECT_BINARY_DIR}
               OSL_TESTSUITE_ROOT=${testsuite}
               OSL_TESTSUITE_SRC=${testsrcdir}
               OSL_TESTSUITE_CUR=${testdir}
@@ -129,7 +129,7 @@ macro ( TESTSUITE )
     set (test_all_cpp $ENV{TESTSUITE_CPP})
     # Add the tests if all is well.
     set (ALL_TEST_LIST "")
-    set (_testsuite "${CMAKE_SOURCE_DIR}/testsuite")
+    set (_testsuite "${PROJECT_SOURCE_DIR}/testsuite")
     foreach (_testname ${_ats_UNPARSED_ARGUMENTS})
         set (_testsrcdir "${_testsuite}/${_testname}")
         if (_ats_TESTNAME)

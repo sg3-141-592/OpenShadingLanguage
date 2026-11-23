@@ -629,6 +629,13 @@ endif ()
 # Rpath handling at the install step
 #
 set (MACOSX_RPATH ON)
+# With relative install RPATHs, the OSL libraries find each other after the
+# tree is relocated, but external dependencies (OpenImageIO, Imath, etc.) must
+# be found through the system loader configuration or LD_LIBRARY_PATH /
+# DYLD_LIBRARY_PATH.  Turn this off to keep the previous absolute-RPATH
+# behavior, which also embeds build-machine dependency paths.
+option (OSL_RELOCATABLE_RPATH
+        "Use relative install RPATHs so the install tree can be relocated" ON)
 if (CMAKE_SKIP_RPATH)
     # We need to disallow the user from truly setting CMAKE_SKIP_RPATH, since
     # we want to run the generated executables from the build tree in order to
@@ -639,11 +646,29 @@ if (CMAKE_SKIP_RPATH)
     unset (CMAKE_INSTALL_RPATH)
 else ()
     if (NOT CMAKE_INSTALL_RPATH)
-        set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
+        if (OSL_RELOCATABLE_RPATH)
+            if (APPLE)
+                set (CMAKE_INSTALL_RPATH
+                     "@loader_path;@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+            elseif (UNIX)
+                set (CMAKE_INSTALL_RPATH
+                     "$ORIGIN;$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+            else ()
+                set (CMAKE_INSTALL_RPATH "")
+            endif ()
+        else ()
+            set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
+        endif ()
     endif ()
-    # add the automatically determined parts of the RPATH that
-    # point to directories outside the build tree to the install RPATH
-    set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    if (OSL_RELOCATABLE_RPATH)
+        # Automatically derived link paths would re-introduce absolute paths
+        # from the build machine into the installed binaries.
+        set (CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+    else ()
+        # add the automatically determined parts of the RPATH that
+        # point to directories outside the build tree to the install RPATH
+        set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    endif ()
     message (VERBOSE "CMAKE_INSTALL_RPATH = ${CMAKE_INSTALL_RPATH}")
 endif ()
 # OSL considerations because we run oslc in the course of building:

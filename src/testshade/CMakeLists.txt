@@ -61,15 +61,15 @@ if (OSL_USE_OPTIX)
     # Install the PTX files in a fixed location so that they can be
     # loaded at run time
     install (FILES ${ptx_list}
-             DESTINATION ${OSL_PTX_INSTALL_DIR})
+             DESTINATION ${OSL_PTX_INSTALL_RELDIR})
 endif()
 
 set ( rs_srcs
     rs_simplerend.cpp )
 
 set(include_dirs ${CMAKE_CURRENT_SOURCE_DIR})
-list(APPEND include_dirs ${CMAKE_SOURCE_DIR}/src/include)
-list(APPEND include_dirs ${CMAKE_BINARY_DIR}/include)
+list(APPEND include_dirs ${PROJECT_SOURCE_DIR}/src/include)
+list(APPEND include_dirs ${PROJECT_BINARY_DIR}/include)
 list(APPEND include_dirs ${IMATH_INCLUDES})
 list(APPEND include_dirs ${OpenImageIO_INCLUDES})
 

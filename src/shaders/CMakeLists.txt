@@ -21,12 +21,12 @@ macro (oslc_compile)
         set (osofile "${CMAKE_CURRENT_BINARY_DIR}/${oslsrc_we}.oso")
     endif ()
     message (VERBOSE "oslc will make '${oslfile}'  ->  '${osofile}'")
-    set (stdosl_header "${CMAKE_SOURCE_DIR}/src/shaders/stdosl.h")
+    set (stdosl_header "${PROJECT_SOURCE_DIR}/src/shaders/stdosl.h")
     set (oslc_args -q ${_shader_DEFINES} "-I${CMAKE_CURRENT_SOURCE_DIR}")
     foreach (_incdir ${_shader_INCLUDE_DIRS})
         list (APPEND oslc_args "-I${_incdir}")
     endforeach ()
-    list (APPEND oslc_args "-I${CMAKE_SOURCE_DIR}/src/shaders")
+    list (APPEND oslc_args "-I${PROJECT_SOURCE_DIR}/src/shaders")
     add_custom_command (OUTPUT ${osofile}
         COMMAND $<TARGET_FILE_DIR:oslc>/$<TARGET_FILE_NAME:oslc> ${oslc_args} "${oslfile}" -o "${osofile}"
         MAIN_DEPENDENCY ${oslfile}
@@ -52,4 +52,4 @@ add_custom_target (shaders ALL
                    SOURCES ${shader_source} ${shader_headers})
 
 install (FILES ${shader_headers} ${shader_source} ${shader_objs}
-         DESTINATION ${OSL_SHADER_INSTALL_DIR})
+         DESTINATION ${OSL_SHADER_INSTALL_RELDIR})

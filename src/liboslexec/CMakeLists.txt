@@ -186,8 +186,8 @@ if (USE_LLVM_BITCODE)
     set (llvm_ops_srcs llvm_ops.cpp)
 
     set(include_dirs ${CMAKE_CURRENT_SOURCE_DIR})
-    list(APPEND include_dirs ${CMAKE_SOURCE_DIR}/src/include)
-    list(APPEND include_dirs ${CMAKE_BINARY_DIR}/include)
+    list(APPEND include_dirs ${PROJECT_SOURCE_DIR}/src/include)
+    list(APPEND include_dirs ${PROJECT_BINARY_DIR}/include)
     list(APPEND include_dirs ${IMATH_INCLUDES})
     list(APPEND include_dirs ${OpenImageIO_INCLUDES})
     list(APPEND include_dirs ${ROBINMAP_INCLUDES})
@@ -211,16 +211,16 @@ if (USE_LLVM_BITCODE)
         # module for each shader, and the PTX can be retrieved by the renderer
         # through the shading system.
         set (liboslexec_shadeops_srcs
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/llvm_ops.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/opnoise.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/opspline.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/opcolor.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/opmatrix.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/optexture.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/pointcloud.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslexec/opclosure.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslnoise/gabornoise.cpp
-            ${CMAKE_SOURCE_DIR}/src/liboslnoise/simplexnoise.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/llvm_ops.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/opnoise.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/opspline.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/opcolor.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/opmatrix.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/optexture.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/pointcloud.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslexec/opclosure.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslnoise/gabornoise.cpp
+            ${PROJECT_SOURCE_DIR}/src/liboslnoise/simplexnoise.cpp
         )
 
         CUDA_SHADEOPS_COMPILE ( "shadeops_cuda"
@@ -244,7 +244,7 @@ if (USE_LLVM_BITCODE)
         # retrieve it through the shading system. But for testing purposes it is
         # handy to make the PTX available offline.
         install (FILES ${shadeops_cuda_ptx}
-            DESTINATION ${OSL_PTX_INSTALL_DIR})
+            DESTINATION ${OSL_PTX_INSTALL_RELDIR})
 
     endif ()
     # Also compile llvm_ops.cpp as a native object so that generated shader
@@ -523,8 +523,8 @@ foreach(batched_target ${BATCHED_TARGET_LIST})
 
     target_include_directories (${batched_target_lib}
         PUBLIC
-            ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-            ${IMATH_INCLUDES}
+            ${OSL_BUILD_INCLUDE_DIRS}
+            ${OSL_INSTALL_INCLUDE_DIR}
         PRIVATE
             ${ROBINMAP_INCLUDES}
         )
@@ -543,10 +543,10 @@ endforeach(batched_target)
 add_library (${local_lib} ${lib_src})
 target_include_directories (${local_lib}
     PUBLIC
-        ${CMAKE_INSTALL_FULL_INCLUDEDIR}
-        ${IMATH_INCLUDES}
+        ${OSL_BUILD_INCLUDE_DIRS}
+        ${OSL_INSTALL_INCLUDE_DIR}
     PRIVATE
-        "${CMAKE_SOURCE_DIR}/src/liboslcomp"
+        "${PROJECT_SOURCE_DIR}/src/liboslcomp"
         ${ROBINMAP_INCLUDES}
     )
 
@@ -573,8 +573,8 @@ else ()
 endif ()
 set(_cpp_inc_flags
     "${_I}${CMAKE_CURRENT_SOURCE_DIR}"
-    "${_I}${CMAKE_SOURCE_DIR}/src/include"
-    "${_I}${CMAKE_BINARY_DIR}/include"
+    "${_I}${PROJECT_SOURCE_DIR}/src/include"
+    "${_I}${PROJECT_BINARY_DIR}/include"
 )
 foreach(_inc ${_oiio_incs})
     list(APPEND _cpp_inc_flags "${_I}${_inc}")
@@ -642,7 +642,7 @@ set_target_properties (${local_lib}
         LINK_FLAGS  ${link_flags}
     )
 
-# add_dependencies (${local_lib} "${CMAKE_SOURCE_DIR}/src/build-scripts/hidesymbols.map")
+# add_dependencies (${local_lib} "${PROJECT_SOURCE_DIR}/src/build-scripts/hidesymbols.map")
 
 foreach(batched_target_lib ${BATCHED_TARGET_LIBS})
     install_targets ( ${batched_target_lib} )

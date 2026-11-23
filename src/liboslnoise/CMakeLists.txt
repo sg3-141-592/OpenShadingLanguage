@@ -10,7 +10,8 @@ set (liboslnoise_srcs gabornoise.cpp simplexnoise.cpp)
 add_library (${local_lib} ${liboslnoise_srcs})
 target_include_directories (${local_lib}
     PUBLIC
-        ${CMAKE_INSTALL_FULL_INCLUDEDIR}
+        ${OSL_BUILD_INCLUDE_DIRS}
+        ${OSL_INSTALL_INCLUDE_DIR}
     PRIVATE
         ../liboslexec)
 target_include_directories (${local_lib}  BEFORE PRIVATE ${OpenImageIO_INCLUDES})

@@ -84,12 +84,14 @@ message (STATUS "Configuration types    = ${CMAKE_CONFIGURATION_TYPES}")
 message (STATUS "Build type             = ${CMAKE_BUILD_TYPE}")
 message (STATUS "Supported release      = ${${PROJECT_NAME}_SUPPORTED_RELEASE}")
 
-# Make the build area layout look a bit more like the final dist layout
-set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+# Make the build area layout look a bit more like the final dist layout.
+# Use the project (not top-level) directories so that the layout is also
+# correct when OSL is embedded via add_subdirectory() / FetchContent.
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
-if ("${PROJECT_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
     message (FATAL_ERROR "Not allowed to run in-source build!")
 endif ()
 
@@ -107,6 +109,16 @@ set (OSO_FILE_VERSION_MINOR 0)
 
 # This needs to be early, for CMAKE_INSTALL_FULL_DATADIR
 include (GNUInstallDirs)
+
+# Public include directories for the OSL libraries.  The build interface keeps
+# the in-tree headers usable when OSL is embedded with add_subdirectory(); the
+# install interface is relative so the installed CMake package stays
+# relocatable.
+set (OSL_BUILD_INCLUDE_DIRS
+     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/include>"
+     "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src/include>"
+     "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>")
+set (OSL_INSTALL_INCLUDE_DIR "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
 
 option (VERBOSE "Print lots of messages while compiling" OFF)
@@ -137,6 +149,25 @@ set (OSL_SHADER_INSTALL_DIR "${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}/shade
      CACHE STRING "Directory where shaders will be installed")
 set (OSL_PTX_INSTALL_DIR "${CMAKE_INSTALL_FULL_DATADIR}/${PROJECT_NAME}/ptx"
      CACHE STRING "Directory where OptiX PTX files will be installed")
+
+# Install destinations are kept relative to the install prefix whenever the
+# configured directory is inside it.  This keeps `cmake --install --prefix ...`
+# self-consistent and lets the install tree be relocated.  A directory that was
+# explicitly configured outside the prefix is installed as an absolute path.
+function (_osl_install_destination out_var install_dir)
+    if (IS_ABSOLUTE "${install_dir}")
+        file (RELATIVE_PATH _rel "${CMAKE_INSTALL_PREFIX}" "${install_dir}")
+        if (_rel MATCHES "^\\.\\.")
+            set (${out_var} "${install_dir}" PARENT_SCOPE)
+        else ()
+            set (${out_var} "${_rel}" PARENT_SCOPE)
+        endif ()
+    else ()
+        set (${out_var} "${install_dir}" PARENT_SCOPE)
+    endif ()
+endfunction ()
+_osl_install_destination (OSL_SHADER_INSTALL_RELDIR "${OSL_SHADER_INSTALL_DIR}")
+_osl_install_destination (OSL_PTX_INSTALL_RELDIR "${OSL_PTX_INSTALL_DIR}")
 set (CMAKE_DEBUG_POSTFIX "" CACHE STRING "Library naming postfix for Debug builds (e.g., '_debug')")
 option (OSL_USTRINGREP_IS_HASH "Always use ustringhash for strings" OFF)
 
@@ -226,9 +257,9 @@ endif ()
 include_directories (
     BEFORE
     "${OSL_LOCAL_DEPS_DIR}/include"
-    "${CMAKE_SOURCE_DIR}/src/include"
-    "${CMAKE_BINARY_DIR}/src/include"
-    "${CMAKE_BINARY_DIR}/include"
+    "${PROJECT_SOURCE_DIR}/src/include"
+    "${PROJECT_BINARY_DIR}/src/include"
+    "${PROJECT_BINARY_DIR}/include"
   )
 
 
@@ -265,6 +296,15 @@ if ((OSL_BUILD_TESTS AND BUILD_TESTING) OR OSL_BUILD_TESTRENDER_LIB)
     add_subdirectory (src/testrender)
 endif ()
 
+# Namespaced aliases for consumers that embed OSL with add_subdirectory() /
+# FetchContent.  Installed packages expose the same names through
+# OSLTargets.cmake.
+foreach (_osl_target oslcomp oslquery oslexec oslnoise libtestrender)
+    if (TARGET ${_osl_target} AND NOT TARGET OSL::${_osl_target})
+        add_library (OSL::${_osl_target} ALIAS ${_osl_target})
+    endif ()
+endforeach ()
+
 if (OSL_BUILD_PLUGINS)
     add_subdirectory (src/osl.imageio)
 endif ()
@@ -284,12 +324,21 @@ endif ()
 
 # install pkgconfig files
 if ( NOT MSVC )
-   configure_file(src/build-scripts/oslexec.pc.in "${CMAKE_BINARY_DIR}/oslexec.pc" @ONLY)
-   configure_file(src/build-scripts/oslcomp.pc.in "${CMAKE_BINARY_DIR}/oslcomp.pc" @ONLY)
-   configure_file(src/build-scripts/oslquery.pc.in "${CMAKE_BINARY_DIR}/oslquery.pc" @ONLY)
-   install (FILES "${CMAKE_BINARY_DIR}/oslexec.pc"
-                  "${CMAKE_BINARY_DIR}/oslcomp.pc"
-                  "${CMAKE_BINARY_DIR}/oslquery.pc"
+   # Keep the pkgconfig files relocatable: express their prefix relative to
+   # the installed .pc location instead of baking in the configure-time prefix.
+   if (IS_ABSOLUTE "${CMAKE_INSTALL_FULL_LIBDIR}"
+       AND IS_ABSOLUTE "${CMAKE_INSTALL_PREFIX}")
+       file (RELATIVE_PATH OSL_PC_PREFIX_REL
+             "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig" "${CMAKE_INSTALL_PREFIX}")
+   else ()
+       set (OSL_PC_PREFIX_REL ".")
+   endif ()
+   configure_file(src/build-scripts/oslexec.pc.in "${PROJECT_BINARY_DIR}/oslexec.pc" @ONLY)
+   configure_file(src/build-scripts/oslcomp.pc.in "${PROJECT_BINARY_DIR}/oslcomp.pc" @ONLY)
+   configure_file(src/build-scripts/oslquery.pc.in "${PROJECT_BINARY_DIR}/oslquery.pc" @ONLY)
+   install (FILES "${PROJECT_BINARY_DIR}/oslexec.pc"
+                  "${PROJECT_BINARY_DIR}/oslcomp.pc"
+                  "${PROJECT_BINARY_DIR}/oslquery.pc"
             DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
             COMPONENT developer)
 endif()
@@ -304,9 +353,9 @@ include (CMakePackageConfigHelpers)
 # the file containing the exported targets
 set (OSL_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets.cmake")
 # the version file
-set (OSL_VERSION_CONFIG "${CMAKE_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+set (OSL_VERSION_CONFIG "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
 # the config file that is actually looked for by find_package
-set (OSL_PROJECT_CONFIG "${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
+set (OSL_PROJECT_CONFIG "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake")
 # where all these files will be installed
 set (OSL_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
@@ -319,7 +368,7 @@ write_basic_package_version_file (
 # generate the Targets file in the binary dir using the targets collected in
 # OSL_EXPORTED_TARGETS each target is added to OSL_EXPORTED_TARGETS through
 # the macro install_target().
-export (EXPORT OSL_EXPORTED_TARGETS FILE "${CMAKE_BINARY_DIR}/${OSL_TARGETS_EXPORT_NAME}")
+export (EXPORT OSL_EXPORTED_TARGETS FILE "${PROJECT_BINARY_DIR}/${OSL_TARGETS_EXPORT_NAME}")
 
 # generate the config file from the template in the binary dir
 configure_package_config_file ("${PROJECT_SOURCE_DIR}/src/cmake/Config.cmake.in"

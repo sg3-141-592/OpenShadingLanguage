@@ -29,19 +29,19 @@ if (USE_GENERATED_EXPORT_HEADER)
           CUSTOM_CONTENT_FROM_VARIABLE exportextras
           )
     list (REMOVE_ITEM public_headers OSL/export.h)
-    list (APPEND public_headers "${CMAKE_BINARY_DIR}/src/include/export.h")
+    list (APPEND public_headers "${PROJECT_BINARY_DIR}/src/include/export.h")
 endif()
 
 
 set (versionfile oslversion.h)
 message (VERBOSE "Create ${versionfile} from ${versionfile}.in")
-configure_file (${PROJECT_NAME}/${versionfile}.in "${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/${versionfile}" @ONLY)
-list (APPEND public_headers "${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/${versionfile}")
+configure_file (${PROJECT_NAME}/${versionfile}.in "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}/${versionfile}" @ONLY)
+list (APPEND public_headers "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}/${versionfile}")
 
 set (oslconfighfile oslconfig.h)
 message (VERBOSE "Create ${oslconfighfile} from ${oslconfighfile}.in")
-configure_file (${PROJECT_NAME}/${oslconfighfile}.in "${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/${oslconfighfile}" @ONLY)
-list (APPEND public_headers "${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/${oslconfighfile}")
+configure_file (${PROJECT_NAME}/${oslconfighfile}.in "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}/${oslconfighfile}" @ONLY)
+list (APPEND public_headers "${PROJECT_BINARY_DIR}/include/${PROJECT_NAME}/${oslconfighfile}")
 
 
 install (FILES ${public_headers}
