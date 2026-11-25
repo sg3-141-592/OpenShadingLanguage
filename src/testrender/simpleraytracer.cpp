@@ -892,26 +892,7 @@ SimpleRaytracer::prepare_render()
     show_albedo_scale = options.get_float("show_albedo_scale");
     show_globals      = options.get_int("show_globals");
 
-    // prepare background importance table (if requested)
-    if (backgroundResolution > 0 && backgroundShaderID >= 0) {
-        // get a context so we can make several background shader calls
-        OSL::PerThreadInfo* thread_info = shadingsys->create_thread_info();
-        ShadingContext* ctx             = shadingsys->get_context(thread_info);
-
-        // build importance table to optimize background sampling
-        auto evaler = [this](const Dual2<Vec3>& dir, ShadingContext* ctx) {
-            return this->eval_background(dir, ctx);
-        };
-        background.prepare(backgroundResolution, evaler, ctx);
-
-        // release context
-        shadingsys->release_context(ctx);
-        shadingsys->destroy_thread_info(thread_info);
-    } else {
-        // we aren't directly evaluating the background
-        backgroundResolution = 0;
-    }
-
+    prepare_background();
     prepare_geometry();
 
     // build bvh and prepare triangles
@@ -1161,6 +1142,32 @@ SimpleRaytracer::reset_accumulation()
         p[2] = 0.0f;
     }
     m_cancel_requested = false;
+}
+
+
+
+void
+SimpleRaytracer::prepare_background()
+{
+    // prepare background importance table (if requested)
+    if (backgroundResolution > 0 && backgroundShaderID >= 0) {
+        // get a context so we can make several background shader calls
+        OSL::PerThreadInfo* thread_info = shadingsys->create_thread_info();
+        ShadingContext* ctx             = shadingsys->get_context(thread_info);
+
+        // build importance table to optimize background sampling
+        auto evaler = [this](const Dual2<Vec3>& dir, ShadingContext* ctx) {
+            return this->eval_background(dir, ctx);
+        };
+        background.prepare(backgroundResolution, evaler, ctx);
+
+        // release context
+        shadingsys->release_context(ctx);
+        shadingsys->destroy_thread_info(thread_info);
+    } else {
+        // we aren't directly evaluating the background
+        backgroundResolution = 0;
+    }
 }
 
 

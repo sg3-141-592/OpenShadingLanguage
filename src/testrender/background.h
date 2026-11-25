@@ -51,6 +51,15 @@ struct Background {
 
     template<typename F, typename T> void prepare(int resolution, F cb, T* data)
     {
+#ifndef __CUDACC__
+        // Allow the table to be rebuilt when the environment changes.
+        delete[] values;
+        delete[] rows;
+        delete[] cols;
+        values = nullptr;
+        rows   = nullptr;
+        cols   = nullptr;
+#endif
         // These values are set via set_variables() in CUDA
         res = resolution;
         if (res < 32)

@@ -440,6 +440,7 @@ public:
         if (_prepared) {
             if (!buildBackground(error))
                 return false;
+            _renderer->prepare_background();
             resetAccumulation();
         }
         return true;
@@ -454,6 +455,7 @@ public:
         if (_prepared) {
             if (!buildBackground(error))
                 return false;
+            _renderer->prepare_background();
             resetAccumulation();
         }
         return true;
@@ -599,10 +601,14 @@ public:
               "}\n";
         static const char* envSource
             = "shader osl_testrender_envmap(float Kb = 1.0, "
-              "string envmap_filename = \"\")\n"
+              "string envmap_filename = \"\", color Cin = color(0.5))\n"
               "{\n"
-              "    color envColor = environment(envmap_filename, I);\n"
-              "    Ci = Kb * envColor * background();\n"
+              "    if (iscameraray()) {\n"
+              "        Ci = Cin * background();\n"
+              "    } else {\n"
+              "        color envColor = environment(envmap_filename, I);\n"
+              "        Ci = Kb * envColor * background();\n"
+              "    }\n"
               "}\n";
 
         const char* source = useEnv ? envSource : constantSource;
@@ -652,6 +658,7 @@ public:
             ok = _shadingsys->Parameter(*group, "envmap_filename", TypeString,
                                         &envmap)
                  && ok;
+            ok = _shadingsys->Parameter(*group, "Cin", TypeColor, &color) && ok;
         } else {
             ok = _shadingsys->Parameter(*group, "Cin", TypeColor, &scaled)
                  && ok;

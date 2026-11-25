@@ -90,6 +90,7 @@ public:
 
     void parse_scene_xml(const std::string& scenefile);
     virtual void prepare_render();
+    void prepare_background();
     void prepare_lights();
     void prepare_geometry();
     virtual void warmup() {}
